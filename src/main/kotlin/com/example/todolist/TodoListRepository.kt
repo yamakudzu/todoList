@@ -21,9 +21,25 @@ class TodoListRepositoryImpl: TodoListRepository {
         val newId = todolist.last().id + 1
         todolist.add(Todo(newId,todo.name))
     }
+
+    override fun deleteTodo(id: String): Todo? {
+        val todoToBeDeleted = findById(id.toInt())
+        todolist.remove(todoToBeDeleted)
+        return todoToBeDeleted
+    }
+
+    private fun findById(id: Int): Todo? {
+        for(todo in todolist) {
+            if(todo.id == id) {
+                return todo
+            }
+        }
+        return null
+    }
 }
 
 interface TodoListRepository {
     fun getTodoList(): List<Todo>
     fun addTodo(todo: NewTodo)
+    fun deleteTodo(id: String): Todo?
 }

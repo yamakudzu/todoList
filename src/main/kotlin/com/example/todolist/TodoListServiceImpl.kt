@@ -12,9 +12,14 @@ class TodoListServiceImpl(val todoListRepository: TodoListRepository): TodoListS
     override fun addTodo(todo: NewTodo) {
         todoListRepository.addTodo(todo)
     }
+
+    override fun deleteTodo(id: String): Todo? {
+        return todoListRepository.deleteTodo(id)
+    }
 }
 
 interface TodoListService {
     fun getTodoList(): List<Todo>
     fun addTodo(todo: NewTodo)
+    fun deleteTodo(id: String): Todo?
 }

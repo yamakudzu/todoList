@@ -7,21 +7,20 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 class TodoListControllerTest {
-    private lateinit var spyService: SpyService
+    private lateinit var spyStubService: SpyStubService
     private lateinit var mockMVC: MockMvc
 
 
     @BeforeEach
     fun setup() {
-        spyService = SpyService()
-        mockMVC = MockMvcBuilders.standaloneSetup(TodoListController(spyService)).build()
+        spyStubService = SpyStubService()
+        mockMVC = MockMvcBuilders.standaloneSetup(TodoListController(spyStubService)).build()
     }
 
     @Test
@@ -32,7 +31,7 @@ class TodoListControllerTest {
 
     @Test
     fun `getTodoList() returns todo list`() {
-        spyService.getTodoList_return_value = listOf(
+        spyStubService.getTodoList_return_value = listOf(
                 Todo(1, "karaoke 3 hours"),
                 Todo(2, "Watch Avatar")
         )
@@ -53,16 +52,37 @@ class TodoListControllerTest {
                 .content(objectMapper.writeValueAsString(newTodo)))
                 .andExpect(status().isOk)
 
-        assertThat(spyService.addTodo_isCalled, equalTo(true))
-        assertThat(spyService.addTodo_todoArgument, equalTo(newTodo))
+        assertThat(spyStubService.addTodo_isCalled, equalTo(true))
+        assertThat(spyStubService.addTodo_todoArgument, equalTo(newTodo))
+    }
+
+    @Test
+    fun `delete todo if successful returns deleted todo`() {
+        // arrange
+        spyStubService.deleteTodo_return_value = Todo(1, "Cooking Class")
+        // action + assertion
+        mockMVC.perform(delete("/tasks/1"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.id", equalTo(1)))
+                .andExpect(jsonPath("$.name", equalTo("Cooking Class")))
+
+        assertThat(spyStubService.deleteTodo_arg_id, equalTo("1"))
+    }
+
+    @Test
+    fun `delete todo if failed returns null`() {
+        spyStubService.deleteTodo_return_value = null
+        mockMVC.perform(delete("/tasks/1"))
+                .andExpect(jsonPath("$").doesNotExist())
     }
 }
 
-class SpyService: TodoListService {
+class SpyStubService: TodoListService {
     var getTodoList_return_value: List<Todo> = emptyList()
-
     var addTodo_isCalled: Boolean = false
     var addTodo_todoArgument: NewTodo? = null
+    var deleteTodo_arg_id: String = ""
+    var deleteTodo_return_value: Todo? = null
 
     override fun getTodoList(): List<Todo> {
         println("TodoList Service Stub")
@@ -72,5 +92,10 @@ class SpyService: TodoListService {
     override fun addTodo(todo: NewTodo) {
         addTodo_isCalled = true
         addTodo_todoArgument = todo
+    }
+
+    override fun deleteTodo(id: String): Todo? {
+        deleteTodo_arg_id = id
+        return deleteTodo_return_value
     }
 }
